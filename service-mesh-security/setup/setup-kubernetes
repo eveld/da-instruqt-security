@@ -1,11 +1,12 @@
 #!/bin/bash
 CONSUL_HELM_VERSION=0.7.0
+IP=$(getent ahosts $HOSTNAME | head -n 1 | cut -d ' ' -f 1)
+while ! nc -z $IP 6443; do sleep 1; done
 
-# Wait for tiller to be available
-until helm --kubeconfig=/etc/kubernetes/admin.conf list
-do
-    printf "." && sleep 1
-done
+until set-workdir; do printf "." && sleep 1; done
+until kubectl get ns default; do printf "." && sleep 1; done
+
+
 
 # Clone the config repo (we should perhaps split this up into multiple repos, one for each setup).
 git clone http://github.com/hashicorp/da-instruqt-security /tmp/security
