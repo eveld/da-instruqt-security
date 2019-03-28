@@ -6,10 +6,32 @@ while ! nc -z $IP 6443; do sleep 1; done
 until set-workdir; do printf "." && sleep 1; done
 until kubectl get ns default; do printf "." && sleep 1; done
 
-
+cat << EOF | kubectl --kubeconfig=/etc/kubernetes/admin.conf apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: consul-server
+  namespace: default
+  labels:
+    app: consul
+    component: server
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  type: NodePort
+  publishNotReadyAddresses: true
+  ports:
+    - name: http
+      port: 8500
+      targetPort: 8500
+      nodePort: 30010
+  selector:
+    app: consul
+    component: server
+EOF
 
 # Clone the config repo (we should perhaps split this up into multiple repos, one for each setup).
-git clone http://github.com/hashicorp/da-instruqt-security /tmp/security
+git clone http://github.com/eveld/da-instruqt-security /tmp/security
 
 # Fetch the latest helm chart
 wget https://github.com/hashicorp/consul-helm/archive/v${CONSUL_HELM_VERSION}.zip -O /tmp/consul-helm.zip
